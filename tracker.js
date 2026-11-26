@@ -94,14 +94,24 @@
 
     function many(action, keys) {
         var list = (keys || []).map(function (k) { return String(k == null ? '' : k); }).filter(Boolean);
-        var promises = [];
-        // Worker membatasi 200 key per request.
+        var chunks = [];
+        // Worker membatasi 200 key per request. Kirim maksimal 150 per request.
         for (var i = 0; i < list.length; i += 150) {
-            for (var j = i; j < Math.min(i + 150, list.length); j++) {
-                promises.push(enqueue(action, list[j]));
-            }
+            chunks.push(list.slice(i, i + 150));
         }
-        return Promise.all(promises);
+        if (!chunks.length) return Promise.resolve([]);
+        return Promise.all(chunks.map(function (chunk) {
+            return requestCounts(
+                action === 'hit' ? chunk : [],
+                action === 'get' ? chunk : []
+            ).then(function (values) {
+                return chunk.map(function (k) { return (values && values[k]) || 0; });
+            }).catch(function () {
+                return chunk.map(function () { return 0; });
+            });
+        })).then(function (results) {
+            return [].concat.apply([], results);
+        });
     }
 
     function requestCounts(hits, gets) {
