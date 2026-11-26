@@ -95,9 +95,9 @@
     function many(action, keys) {
         var list = (keys || []).map(function (k) { return String(k == null ? '' : k); }).filter(Boolean);
         var chunks = [];
-        // Worker membatasi 200 key per request. Kirim maksimal 150 per request.
-        for (var i = 0; i < list.length; i += 150) {
-            chunks.push(list.slice(i, i + 150));
+        // D1 membatasi 100 variabel SQL per query. Kirim maksimal 100 per request.
+        for (var i = 0; i < list.length; i += 100) {
+            chunks.push(list.slice(i, i + 100));
         }
         if (!chunks.length) return Promise.resolve([]);
         return Promise.all(chunks.map(function (chunk) {
